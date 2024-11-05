@@ -207,7 +207,7 @@ function open_block(name, tag) {
 		print ".IP", tag
 	}
 	else if(name == "paragraph") {
-		print ".PP"
+		print ".LP"
 	}
 	else if(name == "troff") {
 		$0 = tag $0

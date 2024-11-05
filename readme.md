@@ -103,7 +103,7 @@ instead:
 
 Markdown makes no distinction between numbered and unnumbered headings,
 or indented and left-blocked paragraphs. *Md2ms* opts to output every
-heading with the **.NH** macro and every paragraph with the **.PP**
+heading with the **.NH** macro and every paragraph with the **.LP**
 macro.
 
 A backslash followed by an asterisk in the input is ambiguous, as it
