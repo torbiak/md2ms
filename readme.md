@@ -4,7 +4,7 @@ md2ms - Markdown to troff -ms macros
 
 # SYNOPSIS
 
-**md2ms** \[ **eqndelim=***xy* \] \[ *file*\... \]
+**md2ms** \[ footnote_links=1 \] \[ eqndelim=xy \] \[ *file*\... \]
 
 # DESCRIPTION
 
@@ -70,6 +70,10 @@ preprocessor commands can be embedded in your Markdown source.
 between them is impossible. See the extensive **BUGS** section for what
 is lost and altered in translation.
 
+Links are turned into hyperlinks using pdfmark by default, but can be rendered
+as footnotes instead by setting **footnote_links** to a truthy value.
+
+
 # SEE ALSO
 
 *eqn*(1), *refer*(1), *troff*(1), *ms*(7)\
@@ -86,10 +90,6 @@ implement lists, so they are the only block elements that can be safely
 nested. To implement strong emphasis, *md2ms* uses the macro **.BI** to
 format spans wrapped in triple asterisks or underscores.
 
-*Ms* has no concept of hyperlinks, so they are implemented as footnotes.
-Autolinked URIs and e-mail addresses are simply output in a
-constant-width font.
-
 *Ms* does not define a horizontal rule macro, so *md2ms* does it
 instead:
 
@@ -99,8 +99,7 @@ instead:
     ..
 
 *Troff* only supports embedding PostScript images. *Md2ms* uses the
-**.BP** macro in *mpictures*(7) to do this. It contains no provisions
-for handling alt text, which is ignored.
+**.PDFPIC** macro in *pdfpic* to do this.
 
 Markdown makes no distinction between numbered and unnumbered headings,
 or indented and left-blocked paragraphs. *Md2ms* opts to output every

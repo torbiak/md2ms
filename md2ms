@@ -15,25 +15,26 @@ function lstrip0(rs) {
 # TODO reference links?
 # FIXME accepts close parens in urls?
 function lstrip0link(A,	tmp) {
-	if(!(tmp = lstrip0("\\([^)]*\\)")))
+	# The opening "[" was eaten when detecting the span, so we're looking
+	# for something like "...](...)".
+	if(!(tmp = lstrip0("[^]]*\\]\\([^)]*\\)")))
 		return 0
-	
-	A["href"] = substr(tmp, 2, RLENGTH-2)
-	sub(/^[ 	]*/, "", A["href"])
-	sub(/[ 	]*$/, "", A["href"])
-	
-	if(!match(A["href"], /".*"/))
-		return 1
-	
-	A["title"] = substr(A["href"], RSTART+1, RLENGTH-2)
-	A["href"] = substr(A["href"], 1, RSTART-1)
-	sub(/[ 	]*$/, "", A["href"])
-	
-	return 2
+	A["title"] = substr(tmp, 1, index(tmp, "]") - 1)
+	sub(/^[^]]*\]\(/, "", tmp)  # remove the title and delimiters
+	A["href"] = substr(tmp, 1, index(tmp, ")") - 1)
+	A["suffix"] = lstrip0("[^ \t\n]+")
+	return 1
 }
 
 function regexpesc(s) {
 	gsub(/[*+?\\|^$[\]()]/, "\\\\&", s)
+	return s
+}
+
+# Escape a string so it can be quoted and given to a macro.
+function stringesc(s) {
+	gsub(/\\/, "\\[rs]", s)  # replace backslashes
+	gsub(/"/, "\\[dq]", s)  # replace double quotes
 	return s
 }
 
@@ -103,9 +104,7 @@ BEGIN {
 	
 	span_re_close["emph"] = ""
 	span_re_close["code"] = ""
-	span_re_close["link"] = "\\]"
 	span_re_close["note"] = "\\]"
-	span_re_close["img"]  = "\\]"
 	
 	span_misc["char","--"]  = "\\-"
 	span_misc["char","---"] = "\\(em"
@@ -324,12 +323,10 @@ function open_span(name, tag,	regexp) {
 		name = ""
 		if(lastchar ~ WORD "$")
 			return
-		if(stacktop(span_stack) != "link") {
-			if(sub(/;$/, "", tag))
-				$0 = ";" $0
-			if(lastchar == "\n")
-				name = "\n\\&"
-		}
+		if(sub(/;$/, "", tag))
+			$0 = ";" $0
+		if(lastchar == "\n")
+			name = "\n\\&"
 		return name "\n.[\n" tag "\n.]\n"
 	}
 	if(name == "uri") {
@@ -356,7 +353,24 @@ function open_span(name, tag,	regexp) {
 		return "\n.CW\n"
 	}
 	if(name == "link") {
-		return "\n\\&\n"
+		if(lstrip0link(A)) {
+			if(footnote_links) {
+				# Return: title footnote_num suffix footnote_diversion
+				return A["title"] \
+					"\\*([.\\n+(FN\\*(.]" \
+					A["suffix"] "\n" \
+					".FS\n" \
+					"\\*([.\\n(FN\\*(.] " A["title"] "\n" \
+					".CW " A["href"] "\n" \
+					".FE\n"
+			} else {  # hyperlink
+				return sprintf("\n.pdfhref W -D \"%s\" -A \"%s\" -- \"%s\"\n",
+					stringesc(A["href"]),
+					stringesc(A["suffix"]),
+					stringesc(A["title"]))
+			}
+		}
+		return "\n"
 	}
 	if(name == "note") {
 		return "\\*([.\\n+(FN\\*(.]\n" \
@@ -364,7 +378,12 @@ function open_span(name, tag,	regexp) {
 			"\\*([.\\n(FN\\*(.]\n"
 	}
 	if(name == "img") {
-		return "\n.ig\n"
+		if(lstrip0link(A)) {
+			return sprintf("\n.PDFPIC -C \"%s\" \n.tl ''%s''\n",
+				stringesc(A["href"]),
+				stringesc(A["title"]))
+		}
+		return "\n"
 	}
 }
 
@@ -382,29 +401,8 @@ function close_span(name, tag,	A) {
 	if(name == "code") {
 		return "\n.R\n"
 	}
-	if(name == "link") {
-		if(lstrip0link(A)) {
-			sub(/^[ 	]$/, "", A["title"])
-			sub(/[ 	]*$/, "", A["title"])
-			if(A["title"] ~ WORD "$")
-				A["title"] = A["title"] "."
-			return "\n\\*([.\\n+(FN\\*(.]\n" \
-				".FS\n" \
-				"\\*([.\\n(FN\\*(.] " A["title"] "\n" \
-				".CW " A["href"] "\n" \
-				".FE\n"
-		}
-		return "\n"
-	}
 	if(name == "note") {
 		return "\n.FE\n"
-	}
-	if(name == "img") {
-		if(lstrip0link(A)) {
-			return "\n..\n" \
-				".BP " A["href"] " \"\" \"\" c \"\" w " \
-				"\"" A["title"] "\"\n"
-		}
 	}
 }
 
