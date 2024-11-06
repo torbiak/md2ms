@@ -370,7 +370,7 @@ function open_span(name, tag,	regexp) {
 					stringesc(A["title"]))
 			}
 		}
-		return "\n"
+		return tag
 	}
 	if(name == "note") {
 		return "\\*([.\\n+(FN\\*(.]\n" \
@@ -383,7 +383,7 @@ function open_span(name, tag,	regexp) {
 				stringesc(A["href"]),
 				stringesc(A["title"]))
 		}
-		return "\n"
+		return tag
 	}
 }
 
